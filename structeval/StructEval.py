@@ -8,7 +8,7 @@ from NLG.bleu.bleu import Bleu
 from NLG.bertscore.bertscore import BertScore
 from radgraph import F1RadGraph
 from structeval.StructBert import StructBert
-from structeval.constants import leaves_mapping
+from structeval.mappings import all_mappings
 from structeval.utils import parse_findings, parse_impression, remove_bullets, remove_numbering
 from sklearn.metrics import classification_report
 from sklearn.exceptions import UndefinedMetricWarning
@@ -20,13 +20,14 @@ warnings.filterwarnings('ignore', category=UndefinedMetricWarning)
 
 class StructEval(nn.Module):
     def __init__(self,
-                 do_radgraph=True,
-                 do_green=True,
                  do_bleu=True,
                  do_rouge=True,
                  do_bertscore=True,
-                 do_diseases=True,
+                 do_radgraph=True,
                  do_chexbert=False,
+                 do_green=True,
+                 do_diseases=False,
+                 diseases_mode=None
                  ):
         super(StructEval, self).__init__()
 
@@ -35,8 +36,19 @@ class StructEval(nn.Module):
         self.do_bleu = do_bleu
         self.do_rouge = do_rouge
         self.do_bertscore = do_bertscore
-        self.do_diseases = do_diseases
         self.do_chexbert = do_chexbert
+        self.do_diseases = do_diseases
+        self.diseases_mode = diseases_mode
+
+        if self.do_diseases:
+            if self.diseases_mode is None or self.diseases_mode not in ["leaves", 
+                                                                        "upper", 
+                                                                        "leaves_with_statuses", 
+                                                                        "upper_with_statuses"]:
+                raise ValueError(
+                    "diseases_mode must be provided when do_diseases is True and must be one of "
+                    "leaves', 'upper', 'leaves_with_statuses', or 'upper_with_statuses'."
+                )
 
         # Initialize scorers only once
         if self.do_radgraph:
@@ -56,8 +68,15 @@ class StructEval(nn.Module):
                 "rougeL": Rouge(rouges=["rougeL"])
             }
         if self.do_diseases:
-            model = "StanfordAIMI/CXR-BERT-Leaves-Diseases-Only"
-            self.diseases_model = StructBert(model_id_or_path=model, mapping=leaves_mapping)
+            if diseases_mode == "leaves":
+                model = "StanfordAIMI/SRR-BERT-Leaves"
+            elif diseases_mode == "upper":
+                model = "StanfordAIMI/SRR-BERT-Upper"
+            elif diseases_mode == "leaves_with_statuses":
+                model = "StanfordAIMI/SRR-BERT-Leaves-with-Statuses"
+            elif diseases_mode == "upper_with_statuses":
+                model = "StanfordAIMI/SRR-BERT-Upper-with-Statuses"
+            self.diseases_model = StructBert(model_id_or_path=model, mapping=all_mappings[diseases_mode]['mapping'])
 
         # Store the metric keys
         self.metric_keys = []
@@ -268,7 +287,7 @@ class StructEval(nn.Module):
         return scores
 
 
-def main3():
+def main():
     refs = [
         'Lungs and Airways:\n- Distortion of the pulmonary bronchovascular markings suggestive of COPD.\n- Lung volumes are within normal limits.\n- No consolidation or pneumothorax observed.\n- Minimal atelectasis at the left lung base.\n\nTubes, Catheters, and Support Devices:\n- Endotracheal tube in situ, terminating 3 cm above the carina.\n- Nasoenteric tube in situ, tip below the left hemidiaphragm, not visualized on this radiograph.\n\nPleura:\n- No pleural effusion seen.',
         'Lungs and Airways:\n- Bilateral diffuse fluffy opacities, suggestive of pulmonary edema.\n\nPleura:\n- Loss of visualization of the bilateral hemidiaphragms, suggesting layering effusions.\n\nCardiovascular:\n- Stable cardiomegaly.\n\nMusculoskeletal and Chest Wall:\n- Chronic impacted fracture of the left humeral surgical neck with periosteal new bone formation.\n- Dislocation of the humerus from the glenoid.',
@@ -369,7 +388,9 @@ def main2():
                     do_bleu=True,
                     do_rouge=True,
                     do_bertscore=True,
-                    do_diseases=True)
+                    do_diseases=True,
+                    diseases_mode="leaves"
+                    )
 
     hyps = [
         '1. No evidence of pneumothorax following the procedure.\n2. No significant change in the appearance of the chest when compared to the previous study.',
@@ -406,10 +427,7 @@ def main2():
     #  'rouge1': 0.6879640921093869, 'rouge2': 0.6173936841103258, 'rougeL': 0.6664468709887289,
     #  'samples_avg_precision': 0.8333333333333334, 'samples_avg_recall': 0.6642857142857143,
     #  'samples_avg_f1-score': 0.7194444444444444}
-    stop
-
-    stop
 
 
+# main()
 # main2()
-# main3()
