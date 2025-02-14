@@ -1,12 +1,15 @@
 ```python
 from structeval import StructEval
 
-evaluator = StructEval(do_radgraph=True,
-                    do_green=False,
-                    do_bleu=True,
-                    do_rouge=True,
-                    do_bertscore=True,
-                    do_diseases=True)
+evaluator = StructEval(
+                do_radgraph=False,
+                do_green=False,
+                do_bleu=False,
+                do_rouge=False,
+                do_bertscore=False,
+                do_diseases=True,
+                diseases_mode="leaves" # one of ['leaves', 'upper', 'leaves_with_statuses', 'upper_with_statuses']
+            )
 
 hyps = [
     '1. No evidence of pneumothorax following the procedure.\n2. No significant change in the appearance of the chest when compared to the previous study.',
