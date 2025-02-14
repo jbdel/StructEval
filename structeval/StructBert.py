@@ -4,7 +4,7 @@ import torch.nn as nn
 from transformers import BertForSequenceClassification, BertTokenizer
 from tqdm import tqdm
 
-from structeval.constants import leaves_mapping
+from structeval.mappings import all_mappings
 
 
 class StructBert(nn.Module):
@@ -61,9 +61,9 @@ class StructBert(nn.Module):
         return outputs, self.map_predictions_to_labels(outputs)
 
 
-if __name__ == "__main__":
-    model = "StanfordAIMI/CXR-BERT-Leaves-Diseases-Only"
-    outputs, _ = StructBert(model_id_or_path=model, mapping=leaves_mapping, tqdm_enable=True)(
+def main():
+    model = "StanfordAIMI/SRR-BERT-Leaves"
+    _, labels = StructBert(model_id_or_path=model, mapping=all_mappings['leaves']['mapping'], tqdm_enable=True)(
         sentences=[
             "Layering pleural effusions",
             "Moderate pulmonary edema.",
@@ -71,4 +71,7 @@ if __name__ == "__main__":
             "Stable cardiomegaly.",
         ],
     )
-    print(outputs)
+    print(labels)
+
+# main()
+# [['Simple pleural effusion'], ['Edema'], ['Acute humerus fracture', 'Shoulder dislocation'], ['Cardiomegaly']]
